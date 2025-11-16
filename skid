@@ -1,0 +1,105 @@
+task.wait(1)
+
+local plr = game.Players.LocalPlayer
+local cam = workspace.CurrentCamera
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+
+-- 카메라 시작/끝 위치
+local spawnPos = workspace:WaitForChild("SpawnLocation").Position
+local startPos = Vector3.new(spawnPos.X, spawnPos.Y + 3, spawnPos.Z)
+local endY = 25
+
+-- 카메라 원래값 저장
+local oldCamType = cam.CameraType
+local oldCamCF = cam.CFrame
+
+-- 카메라 스크립트화
+cam.CameraType = Enum.CameraType.Scriptable
+cam.CFrame = CFrame.new(startPos)
+
+-- UI 생성
+local gui = Instance.new("ScreenGui", plr:WaitForChild("PlayerGui"))
+gui.IgnoreGuiInset = true
+gui.ResetOnSpawn = false
+
+-- 큰 텍스트
+local labelMain = Instance.new("TextLabel", gui)
+labelMain.Size = UDim2.new(1,0,0,100)
+labelMain.Position = UDim2.new(0,0,0.42,0)
+labelMain.BackgroundTransparency = 1
+labelMain.Text = "Ftap.com"
+labelMain.TextScaled = true
+labelMain.Font = Enum.Font.GothamBold
+labelMain.TextColor3 = Color3.new(1,1,1)
+labelMain.TextTransparency = 1 -- 처음엔 안보이게
+
+-- 작은 텍스트
+local labelSub = Instance.new("TextLabel", gui)
+labelSub.Size = UDim2.new(0.6,0,0,50)
+labelSub.Position = UDim2.new(0.2,0,0.52,0)
+labelSub.BackgroundTransparency = 1
+labelSub.Text = "The Best Script in the Ftap"
+labelSub.TextScaled = true
+labelSub.Font = Enum.Font.GothamBold
+labelSub.TextColor3 = Color3.new(1,1,1)
+labelSub.TextTransparency = 1 -- 처음엔 안보이게
+
+-- 블랙 화면
+local black = Instance.new("Frame", gui)
+black.Size = UDim2.new(1,0,1,0)
+black.BackgroundColor3 = Color3.new(0,0,0)
+black.BackgroundTransparency = 1
+
+-- 카메라 애니메이션
+local startTime = tick()
+local connection
+connection = RunService.RenderStepped:Connect(function()
+	local t = tick() - startTime
+	local alpha = math.clamp(t / 4,0,1)
+	local newY = startPos.Y + (endY - startPos.Y) * alpha
+	cam.CFrame = CFrame.new(Vector3.new(spawnPos.X,newY,spawnPos.Z)) * CFrame.Angles(math.rad(-90),0,0)
+end)
+
+-- Tween 옵션 (빠르게 부드럽게 등장)
+local fadeInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+
+-- 큰 글자 부드럽게 등장
+task.delay(0.2, function()
+	local tweenMain = TweenService:Create(labelMain, fadeInfo, {TextTransparency = 0})
+	tweenMain:Play()
+end)
+
+-- 작은 글자 부드럽게 등장 (0.4초 뒤)
+task.delay(0.6, function()
+	local tweenSub = TweenService:Create(labelSub, fadeInfo, {TextTransparency = 0})
+	tweenSub:Play()
+end)
+
+-- 블랙아웃 + 카메라 복귀 처리
+task.delay(4.5, function()
+	-- 카메라 먼저 원위치로 이동
+	cam.CameraType = oldCamType
+	cam.CFrame = oldCamCF
+
+	-- 블랙아웃
+	local tweenBlack = TweenService:Create(black, TweenInfo.new(1.5), {BackgroundTransparency = 0})
+	tweenBlack:Play()
+
+	-- 글자 페이드 아웃
+	local tweenMainOut = TweenService:Create(labelMain, TweenInfo.new(0.5), {TextTransparency = 1})
+	tweenMainOut:Play()
+	local tweenSubOut = TweenService:Create(labelSub, TweenInfo.new(0.5), {TextTransparency = 1})
+	tweenSubOut:Play()
+
+	-- 블랙아웃 제거
+	task.delay(1.5, function()
+		local tweenOut = TweenService:Create(black, TweenInfo.new(1), {BackgroundTransparency = 1})
+		tweenOut:Play()
+        connection:Disconnect()
+		task.delay(1, function()
+			gui:Destroy()
+			
+		end)
+	end)
+end)
